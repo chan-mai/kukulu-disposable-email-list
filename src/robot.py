@@ -1,9 +1,18 @@
 import requests
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+urllib3.disable_warnings(InsecureRequestWarning)
 from bs4 import BeautifulSoup
 import os
 import random
+import datetime
 
-if __name__ == '__main__':
+start = datetime.datetime.now()
+
+def log(message):
+    print(f'\033[32m[log]\033[0m {(datetime.datetime.now() - start).seconds}s', message)
+
+def crawl(proxy):
     user_agents = [
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
@@ -28,8 +37,23 @@ if __name__ == '__main__':
     headers = {
         'User-Agent': user_agents[random.randint(0, len(user_agents) - 1)]
     }
-    print(headers)
-    response = requests.get('https://m.kuku.lu/ja.php', headers=headers)
+    # print(headers)
+    # proxyがあれば設定
+    response = None
+    
+    if proxy:
+        response = requests.get('https://m.kuku.lu/ja.php', headers=headers, proxies=proxy, verify=False, allow_redirects=False)
+    else:
+        response = requests.get('https://m.kuku.lu/ja.php', headers=headers)
+    
+    if response is None:
+        print("Error: response is None")
+        return
+    
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        return
+    
     response.encoding = response.apparent_encoding
     html = response.text
     
@@ -47,7 +71,8 @@ if __name__ == '__main__':
     # 差分を取得
     new_domains = list(set(domains) - set(current_domains))
     
-    print(f"diff: {len(new_domains)}\n{new_domains}")
+    log(f"get: {len(domains)}, current: {len(current_domains)}, diff: {len(new_domains)}, add: {len(new_domains)}")
+    log(new_domains)
     
     # 重複を削除
     new_domains = list(set(new_domains))
@@ -57,3 +82,30 @@ if __name__ == '__main__':
     with open('domains.txt', 'a') as f:
         for domain in new_domains:
             f.write(domain + '\n')
+
+def get_proxy_ip():
+    # https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&country=jp&protocol=http&proxy_format=protocolipport&format=json&timeout=20000
+    # API叩く
+    response = requests.get('https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&country=jp&protocol=http&proxy_format=protocolipport&format=json&timeout=20000')
+    response.encoding = response.apparent_encoding
+    
+    # response.json()["proxies"]からランダム取得
+    proxies = response.json()["proxies"]
+    proxy = {
+        "http": proxies[random.randint(0, len(proxies) - 1)]["proxy"].replace("http://", ""),
+    }
+    return proxy
+
+
+if __name__ == '__main__':
+    # プロキシ / 非プロキシで各1回クロール
+    log("Run without proxy")
+    crawl(None)
+    log("Done without proxy")
+    
+    log("Run with proxy")
+    proxy = get_proxy_ip()
+    log(f"Proxy: {proxy['http']}")
+    crawl(proxy)
+    log("Done with proxy")
+    
