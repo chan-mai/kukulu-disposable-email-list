@@ -1,0 +1,41 @@
+name: Get a list of domains from m.kuku.lu
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */12 * * *"
+jobs:
+  Crawler:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+        # chekout this repo
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+        # setup python3.9
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+        # pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r ./src/requirements.txt
+
+        # run crawler
+      - name: Run scraping script
+        run: |
+          python ./src/robot.py
+        
+        # push files
+      - name: commit files
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git add domains.txt
+          git commit -m 'update: domains.txt'
+          git push origin main
