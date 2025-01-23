@@ -12,7 +12,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        loop: ${{ fromJSON(toJSON(github.event.workflow_run.created_at) | jq 'strptime("%Y-%m-%dT%H:%M:%SZ"), .[5] % 11 + 30, range(1; .)') }}
+        loop: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       # chekout this repo
       - name: Checkout repository
