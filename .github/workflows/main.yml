@@ -2,36 +2,49 @@ name: Get a list of domains from m.kuku.lu
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */12 * * *"
+    - cron: "0 * * * *"
+
 jobs:
-  Crawler:
+  generate-random-number:
+    runs-on: ubuntu-latest
+    outputs:
+      random_number: ${{ steps.generate.outputs.random_number }}
+    steps:
+      - name: Generate random number between 10 and 30
+        id: generate
+        run: echo "::set-output name=random_number::$(($RANDOM % 11 + 30))"
+
+  crawler:
+    needs: generate-random-number
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
-    
+    strategy:
+      matrix:
+        loop: ${{ fromJSON(range(1, needs.generate-random-number.outputs.random_number)) }}
     steps:
-        # chekout this repo
+      # chekout this repo
       - name: Checkout repository
         uses: actions/checkout@v2
 
-        # setup python3.9
+      # setup python3.9
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: "3.9"
 
-        # pip install -r requirements.txt
+      # pip install -r requirements.txt
       - name: Install dependencies
         run: |
           pip install -r ./src/requirements.txt
 
-        # run crawler
+      # run crawler
       - name: Run scraping script
         run: |
           python ./src/robot.py
-        
-        # push files
+
+      # push files
       - name: commit files
         run: |
           git config --global user.name "github-actions[bot]"
