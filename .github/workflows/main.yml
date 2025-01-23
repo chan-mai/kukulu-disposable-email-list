@@ -22,7 +22,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        loop: ${{ fromJSON(range(1, needs.generate-random-number.outputs.random_number)) }}
+        loop: ${{ fromJSON(needs.generate-random-number.outputs.random_number | jq 'range(1; .)') }}
     steps:
       # chekout this repo
       - name: Checkout repository
