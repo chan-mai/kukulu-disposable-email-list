@@ -5,15 +5,6 @@ on:
     - cron: "0 * * * *"
 
 jobs:
-  generate-random-number:
-    runs-on: ubuntu-latest
-    outputs:
-      random_number: ${{ steps.generate.outputs.random_number }}
-    steps:
-      - name: Generate random number between 10 and 30
-        id: generate
-        run: echo "::set-output name=random_number::$(($RANDOM % 11 + 30))"
-
   crawler:
     needs: generate-random-number
     runs-on: ubuntu-latest
@@ -22,7 +13,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        loop: ${{ fromJSON(needs.generate-random-number.outputs.random_number | jq 'range(1; .)') }}
+        loop: ${{ fromJSON(toJSON(github.event.workflow_run.created_at) | jq 'strptime("%Y-%m-%dT%H:%M:%SZ") | .[5] % 11 + 30 | range(1; .)') }}
     steps:
       # chekout this repo
       - name: Checkout repository
