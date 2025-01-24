@@ -51,6 +51,7 @@ jobs:
   
   sort:
     runs-on: ubuntu-latest
+    needs: crawler
     permissions:
       contents: write
       packages: write
