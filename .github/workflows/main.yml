@@ -45,6 +45,41 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes detected."
           else
-            git commit -m 'update: domains.txt'
+            git commit -m 'update: add new domain to domains.txt'
             git push origin main
           fi
+  
+  sort:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      #- name: Install dependencies
+      #  run: |
+      #    pip install -r ./src/requirements.txt
+
+      - name: Sort domains
+        run: |
+          python ./src/sort.py
+
+      - name: commit files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add domains.txt
+          if git diff --cached --quiet; then
+            echo "No changes detected."
+          else
+            git commit -m 'update: sorted domains.txt'
+            git push origin main
+          fi
+
