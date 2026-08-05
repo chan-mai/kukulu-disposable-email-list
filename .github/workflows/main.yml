@@ -4,40 +4,30 @@ on:
   schedule:
     - cron: "0 * * * *"
 
+# push競合を防ぐため同時実行しない
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+
 jobs:
-  crawler:
+  crawl:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
-    strategy:
-      max-parallel: 2
-      fail-fast: false
-      matrix:
-        loop: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
-      # chekout this repo
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      # setup python3.9
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.9"
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
 
-      # pip install -r requirements.txt
-      - name: Install dependencies
-        run: |
-          pip install -r ./src/requirements.txt
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
-      # run crawler
-      - name: Run scraping script
-        run: |
-          python ./src/robot.py
+      - name: Run crawler
+        run: cargo run --release
 
-      # push files
-      - name: commit files
+      - name: Commit changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -45,42 +35,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes detected."
           else
-            git commit -m 'update: add new domain to domains.txt'
+            git commit -m 'update: add new domains to domains.txt'
             git push origin main
           fi
-  
-  sort:
-    runs-on: ubuntu-latest
-    needs: crawler
-    permissions:
-      contents: write
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.9"
-
-      #- name: Install dependencies
-      #  run: |
-      #    pip install -r ./src/requirements.txt
-
-      - name: Sort domains
-        run: |
-          python ./src/sort.py
-
-      - name: commit files
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add domains.txt
-          if git diff --cached --quiet; then
-            echo "No changes detected."
-          else
-            git commit -m 'update: sorted domains.txt'
-            git push origin main
-          fi
-

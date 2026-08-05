@@ -1,0 +1,12 @@
+[package]
+name = "kukulu-crawler"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+scraper = "0.23"
+ureq = "2"
+
+[profile.release]
+strip = true
